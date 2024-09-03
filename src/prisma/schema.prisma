@@ -1,0 +1,292 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                          Int                           @id @default(autoincrement())
+  publicId                    String                        @unique
+  telegramUserId              BigInt                        @unique @db.UnsignedBigInt
+  telegramUsername            String?
+  telegramPhoto               String?
+  telegramPhotoMime           String?
+  firstName                   String                        @db.VarChar(64)
+  lastName                    String?                       @db.VarChar(64)
+  language                    String?
+  email                       String?
+  priceCurrency               String?
+  totpSecret                  String?
+  createdAt                   DateTime                      @default(now())
+  Asset                       Asset[]
+  Transaction                 Transaction[]
+  internalTransferUserOutputs InternalTransferTransaction[] @relation("internalTransferUserOutputs") /// исходящие внутренние переводы
+  internalTransferUserInputs  InternalTransferTransaction[] @relation("internalTransferUserInputs") /// входящие внутренние переводы
+  Autoconvert                 Autoconvert[]
+  verification                Verification?
+  verificationRequests        VerificationRequest[]
+  emailUpdateRequests         EmailUpdateRequest[]
+  deposits                    Deposit[]
+  payouts                     Payout[]
+  frozenAmounts               FrozenAmount[]
+  freezeTransactions          FreezeTransaction[]
+  unfreezeTransactions        UnfreezeTransaction[]
+  Swaps                       Swaps[]
+}
+
+model EmailUpdateRequest {
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+  email      String
+  secretCode String
+  finalized  Boolean  @default(false)
+  expires    DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([userId, secretCode])
+}
+
+model Verification {
+  id                    Int                  @id @default(autoincrement())
+  status                VerificationStatus
+  progress              Int                  @db.UnsignedTinyInt()
+  user                  User                 @relation(fields: [userId], references: [id])
+  userId                Int                  @unique /// собственник записи
+  verificationRequest   VerificationRequest? @relation(fields: [verificationRequestId], references: [id])
+  verificationRequestId Int?                 @unique
+  verificationError     String?
+  createdAt             DateTime             @default(now())
+}
+
+model VerificationRequest {
+  id            Int            @id @default(autoincrement())
+  user          User           @relation(fields: [userId], references: [id])
+  userId        Int /// собственник записи
+  firstName     String
+  lastName      String
+  docId         String
+  createdAt     DateTime       @default(now())
+  verifications Verification[]
+}
+
+model Asset {
+  id         Int          @id @default(autoincrement())
+  currencyId CurrencyType
+  owner      User         @relation(fields: [ownerId], references: [id])
+  ownerId    Int
+  amount     Float
+
+  @@unique([ownerId, currencyId])
+}
+
+model Swaps {
+  id             Int          @id @default(autoincrement())
+  currencyFromId CurrencyType
+  currencyToId   CurrencyType
+  value          Int
+  user           User         @relation(fields: [userId], references: [id])
+  userId         Int
+  createdAt      DateTime     @default(now())
+
+  @@index([userId])
+}
+
+model FrozenAmount {
+  id                  Int                  @id @default(autoincrement())
+  user                User                 @relation(fields: [userId], references: [id])
+  userId              Int
+  amount              Float                @default(0)
+  currencyId          CurrencyType
+  unfrozen            Boolean              @default(false)
+  createdAt           DateTime             @default(now())
+  FreezeTransaction   FreezeTransaction?
+  UnfreezeTransaction UnfreezeTransaction?
+  payout              Payout?
+
+  @@index([userId, currencyId])
+}
+
+model FreezeTransaction {
+  id             Int          @id @default(autoincrement())
+  user           User         @relation(fields: [userId], references: [id])
+  userId         Int /// собственник записи
+  frozenAmount   FrozenAmount @relation(fields: [frozenAmountId], references: [id])
+  frozenAmountId Int          @unique
+  createdAt      DateTime     @default(now())
+}
+
+model UnfreezeTransaction {
+  id             Int          @id @default(autoincrement())
+  user           User         @relation(fields: [userId], references: [id])
+  userId         Int /// собственник записи
+  frozenAmount   FrozenAmount @relation(fields: [frozenAmountId], references: [id])
+  frozenAmountId Int          @unique
+  createdAt      DateTime     @default(now())
+}
+
+/// История транзакций
+model Transaction {
+  id                      Int                           @id @default(autoincrement())
+  type                    TransactionType /// тип транзакции; от типа зависит, из каких таблиц необходимо подгружать детали транзакции
+  user                    User                          @relation(fields: [userId], references: [id])
+  userId                  Int /// собственник записи
+  currencyIdInput         CurrencyType? /// используется для поиска
+  currencyIdOutput        CurrencyType? /// используется для поиска
+  createdAt               DateTime                      @default(now())
+  internalTransferOutputs InternalTransferTransaction[] @relation("internalTransferOutputs") /// только если тип INTERNAL_TRANSFER_OUTPUT; исходящий перевод
+  internalTransferInputs  InternalTransferTransaction[] @relation("internalTransferInputs") /// только если тип INTERNAL_TRANSFER_INPUT; входящий перевод
+  deposit                 Deposit?
+  transaction             Payout?
+}
+
+/// Внутренний перевод
+model InternalTransferTransaction {
+  id                  Int          @id @default(autoincrement())
+  userOutput          User         @relation("internalTransferUserOutputs", fields: [userOutputId], references: [id])
+  userOutputId        Int
+  userInput           User         @relation("internalTransferUserInputs", fields: [userInputId], references: [id])
+  userInputId         Int
+  currencyId          CurrencyType
+  value               String
+  transactionOutput   Transaction  @relation("internalTransferOutputs", fields: [transactionOutputId], references: [id]) /// запись в истории отправителя
+  transactionOutputId Int
+  transactionInput    Transaction  @relation("internalTransferInputs", fields: [transactionInputId], references: [id]) /// запись в истории получателя
+  transactionInputId  Int
+  createdAt           DateTime     @default(now())
+}
+
+/// Пополнение (bound invoice)
+model Deposit {
+  id               Int                 @id @default(autoincrement())
+  user             User                @relation(fields: [userId], references: [id])
+  userId           Int
+  currencyId       CurrencyType
+  amount           Float? /// Amount of the invoice
+  fee              Float? /// Service fee for invoice. This amount will be deducted from invoice amount
+  totalDebitAmount Float /// The total amount of money received on the invoice wallet
+  transaction      Transaction         @relation(fields: [transactionId], references: [id])
+  transactionId    Int                 @unique
+  address          String
+  idempotencyKey   String              @unique
+  externalId       String              @unique
+  valueMin         Float
+  state            CalypsoInvoiceState
+  finalized        Boolean             @default(false)
+  createdAt        DateTime            @default(now())
+}
+
+/// Исходящий платеж
+model Payout {
+  id             Int                @id @default(autoincrement())
+  user           User               @relation(fields: [userId], references: [id])
+  userId         Int
+  transaction    Transaction        @relation(fields: [transactionId], references: [id])
+  transactionId  Int                @unique
+  depositAddress String
+  idempotencyKey String             @unique
+  externalId     String             @unique
+  frozenAmount   FrozenAmount       @relation(fields: [frozenAmountId], references: [id])
+  frozenAmountId Int                @unique
+  currencyId     CurrencyType
+  comment        String             @db.VarChar(200)
+  state          CalypsoPayoutState
+  finalized      Boolean            @default(false)
+}
+
+model CalypsoPayoutUpdate {
+  id         Int      @id @default(autoincrement())
+  type       String
+  externalId String
+  body       Json
+  createdAt  DateTime @default(now())
+
+  @@index([externalId])
+}
+
+/// Изменение состояние инвойса
+model CalypsoInvoiceUpdate {
+  id         Int      @id @default(autoincrement())
+  type       String
+  externalId String
+  body       Json
+  createdAt  DateTime @default(now())
+
+  @@index([externalId])
+}
+
+/// Адрес с автоконвертацией
+model Autoconvert {
+  id             Int          @id @default(autoincrement())
+  currencyIdFrom CurrencyType
+  currencyIdTo   CurrencyType
+  address        String
+  user           User         @relation(fields: [userId], references: [id])
+  userId         Int
+  createdAt      DateTime     @default(now())
+}
+
+model BotSession {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String @db.Text
+}
+
+enum TransactionType {
+  DEPOSIT
+  PAYOUT
+  SWAP
+  INTERNAL_TRANSFER_OUTPUT
+  INTERNAL_TRANSFER_INPUT
+}
+
+/// См. https://docs.calypso.finance/reference/enum-description#currency
+enum CurrencyType {
+  BTC
+  ETH
+  USDT_TRX
+  USDT
+  LTC
+  TRX
+  @@map("CurrencyType")
+}
+
+enum CalypsoInvoiceState {
+  PENDING_PAYMENT
+  MEM_POOL_FOUND
+  PAID
+  PENDING_INTERVENTION
+  CANCEL
+  ARCHIVED
+  DECLINED
+  COMPLETED
+  PENDING_COMPLIANCE_CHECK
+  EXPIRED
+}
+
+enum CalypsoPayoutState {
+  CREATION_IN_PROGRESS
+  PENDING_CONFIRMATION
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  CANCELED
+}
+
+enum VerificationStatus {
+  VERIFIED
+  NON_VERIFIED
+  PENDING
+}
+
+enum TransactionDirection {
+  DEPOSIT
+  WITHDRAW
+}

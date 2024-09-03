@@ -1,0 +1,66 @@
+import { CryptoCurrency } from '@/interfaces/currencies.interface';
+import { CurrencyType } from '@prisma/client';
+
+// Поддерживаемые криптовалюты: BTC, ETH, USDT (TRC 20, ERC 20), LTC, TRX.
+export const payoutCurrencies: CryptoCurrency[] = [
+  {
+    id: CurrencyType.BTC,
+    type: 'CRYPTO',
+    cryptoCode: 'BTC',
+    cryptoToken: 'BTC',
+    cryptoChain: 'BITCOIN',
+    cryptoTokenName: 'BTC',
+    cryptoChainName: 'Bitcoin',
+    decimals: 8,
+  },
+  {
+    id: CurrencyType.ETH,
+    type: 'CRYPTO',
+    cryptoCode: 'ETH',
+    cryptoToken: 'ETH',
+    cryptoChain: 'ETHEREUM',
+    cryptoTokenName: 'ETH',
+    cryptoChainName: 'Ethereum',
+    decimals: 18,
+  },
+  {
+    id: CurrencyType.USDT_TRX,
+    type: 'CRYPTO',
+    cryptoCode: 'USDT',
+    cryptoToken: 'USDT',
+    cryptoChain: 'TRON',
+    cryptoTokenName: 'USDT',
+    cryptoChainName: 'Tron',
+    decimals: 6,
+  },
+  {
+    id: CurrencyType.USDT,
+    type: 'CRYPTO',
+    cryptoCode: 'USDT',
+    cryptoToken: 'USDT',
+    cryptoChain: 'ETHEREUM',
+    cryptoTokenName: 'USDT',
+    cryptoChainName: 'Ethereum',
+    decimals: 6,
+  },
+  {
+    id: CurrencyType.LTC,
+    type: 'CRYPTO',
+    cryptoCode: 'LTC',
+    cryptoToken: 'LTC',
+    cryptoChain: 'LITECOIN',
+    cryptoTokenName: 'LTC',
+    cryptoChainName: 'Litecoin',
+    decimals: 8,
+  },
+  {
+    id: CurrencyType.TRX,
+    type: 'CRYPTO',
+    cryptoCode: 'TRX',
+    cryptoToken: 'TRX',
+    cryptoChain: 'TRON',
+    cryptoTokenName: 'TRX',
+    cryptoChainName: 'Tron',
+    decimals: 6,
+  },
+];
