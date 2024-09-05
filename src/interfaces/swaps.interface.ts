@@ -1,12 +1,15 @@
 import { Request, Response } from 'express';
-import { User } from '@prisma/client';
+import { User, SwapStatus } from '@prisma/client';
 
 export interface Swap {
   id: string;
-  currencyFromId: string;
-  currencyToId: string;
+  sourceCurrency: string;
+  destinationCurrency: string;
+  sourceAmount: number;
+  destinationAmount: number;
   userId: number;
-  value: number;
+  amount: number;
+  state: SwapStatus;
 }
 
 export interface SwapCreateRequest {

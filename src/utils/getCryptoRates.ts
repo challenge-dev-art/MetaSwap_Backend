@@ -44,23 +44,25 @@ async function getCryptoExchangeRates(): Promise<Record<string, number>> {
 
 // Конвертация суммы из одной криптовалюты в другую
 export async function convertCryptoAmount(
-  currencyFrom: string,
-  currencyTo: number,
-): Promise<{ rate: number; currencyTo: number; currencyFrom: string }> {
+  sourceCurrency: string,
+  destinationCurrency: string,
+): Promise<{ rate: number; destinationCurrency: string; sourceCurrency: string }> {
   const rates = await getCryptoExchangeRates();
 
-  if (!rates[currencyFrom] || !rates[currencyTo]) {
+  console.log('rates: ', rates);
+
+  if (!rates[sourceCurrency] || !rates[destinationCurrency]) {
     throw new Error('Invalid currency symbol');
   }
-  const fromRate = rates[currencyFrom];
-  const toRate = rates[currencyTo];
+  const fromRate = rates[sourceCurrency];
+  const toRate = rates[destinationCurrency];
 
   const rate = fromRate / toRate;
   // const convertedAmount = amount * exchangeRate;
 
   return {
-    currencyFrom,
-    currencyTo,
+    sourceCurrency,
+    destinationCurrency,
     rate,
   };
 }

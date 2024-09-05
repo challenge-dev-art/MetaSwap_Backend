@@ -13,7 +13,11 @@ export class SwapCurrenciesRoute implements Routes {
   }
 
   private initializeRoutes() {
-    this.router.get(`${this.path}`, AuthMiddleware(), (req, res, next) => {
+    // this.router.get(`${this.path}`, AuthMiddleware(), (req, res, next) => {
+    //   this.swapsController.getCurrencyPairs(req, res, next);
+    // });
+    this.router.get(`${this.path}`, (req, res, next) => {
+      console.log('Route-getCurrencyPairs');
       this.swapsController.getCurrencyPairs(req, res, next);
     });
   }

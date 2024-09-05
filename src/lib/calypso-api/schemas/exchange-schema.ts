@@ -17,20 +17,22 @@ export const NetworkDataSchema = object({
   type: optional(string()),
 });
 
-export const CurrencyPairSchema = object({
-  name: string(),
-  feeCurrencyName: string(),
-  coidId: string(),
-  networkData: NetworkDataSchema,
-  scale: number(),
-  blockchainScale: number(),
-  garbageAmount: optional(number()),
-  crypto: boolean(),
-  blockchainName: string(),
-  contract: optional(string()),
-  enabled: boolean(),
-  active: boolean(),
-});
+export const CurrencyPairSchema = object({ name: string(), paires: array(string()) });
+
+// export const CurrencyPairSchema = object({
+//   name: string(),
+//   feeCurrencyName: string(),
+//   coidId: string(),
+//   networkData: NetworkDataSchema,
+//   scale: number(),
+//   blockchainScale: number(),
+//   garbageAmount: optional(number()),
+//   crypto: boolean(),
+//   blockchainName: string(),
+//   contract: optional(string()),
+//   enabled: boolean(),
+//   active: boolean(),
+// });
 
 export const ExchangePairSchema = object({
   currencyPairs: array(CurrencyPairSchema),

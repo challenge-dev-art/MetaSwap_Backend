@@ -18,7 +18,7 @@ export interface FiatCurrency {
   name: string;
   symbol: string;
   flagUrl: string;
-  decimals: number;
+  decimals?: number;
 }
 
 export type Currency = CryptoCurrency | FiatCurrency;

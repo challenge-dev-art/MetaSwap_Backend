@@ -3,12 +3,12 @@ import { CurrencyType } from '@prisma/client';
 
 export class CreateSwapsDto {
   @IsEnum(CurrencyType)
-  public currencyFromId: string;
+  public sourceCurrency: string;
 
   @IsEnum(CurrencyType)
-  public currencyToId: string;
+  public destinationCurrency: string;
 
   @IsNumber()
   @IsPositive()
-  public value: number;
+  public amount: number;
 }

@@ -94,6 +94,7 @@ model Swaps {
   user           User         @relation(fields: [userId], references: [id])
   userId         Int
   createdAt      DateTime     @default(now())
+  state          SwapStatus
 
   @@index([userId])
 }
@@ -247,6 +248,7 @@ enum TransactionType {
 }
 
 /// См. https://docs.calypso.finance/reference/enum-description#currency
+
 enum CurrencyType {
   BTC
   ETH
@@ -290,3 +292,10 @@ enum TransactionDirection {
   DEPOSIT
   WITHDRAW
 }
+
+enum SwapStatus {
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+

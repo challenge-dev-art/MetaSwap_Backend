@@ -212,6 +212,10 @@ export class CalypsoApi {
    * @returns
    */
   public async getCurrencyPairs() {
+    console.log('Fanal-getCurrencyPairs');
+    // console.log('publicKey: ', this._publicKey);
+    // console.log('secretKey: ', this._secretKey);
+    // console.log('account: ', this._account);
     return await this._callCalypso('exchange/pairs', ExchangePairSchema, {
       account: this._account,
     });
@@ -238,6 +242,23 @@ export class CalypsoApi {
   /**
    * Create exchange.
    *
+   * See: https://docs.calypso.finance/reference/getexchange
+   *
+   * @param userId GetExchangeOpts
+   * @returns
+   */
+  public async getExchange(id: number) {
+    return await this._callCalypso('exchange/get', ExchangeSchema, {
+      account: this._account,
+      payload: {
+        id: id,
+      },
+    });
+  }
+
+  /**
+   * Create exchange.
+   *
    * See: https://docs.calypso.finance/reference/createexchange
    *
    * @param opts CreateExchangeOpts
@@ -255,43 +276,76 @@ export class CalypsoApi {
   }
 
   private async _callCalypso<T>(route: string, schema: ZodType<T>, body?: object): Promise<CallCalypsoResult<T>> {
+    console.log('Signature-callCalypso');
+    console.log('publicKey: ', this._publicKey);
+    console.log('secretKey: ', this._secretKey);
+    console.log('account: ', this._account);
+    console.log('route: ', route);
+    console.log('body: ', body);
     const timestamp = Date.now();
     const requestBody = body ? { timestamp, ...body } : { timestamp };
     const requestBodyStr = JSON.stringify(requestBody, null, 2);
+    //const requestBodyStr = JSON.stringify(requestBody);
 
     const signature = sign(requestBodyStr, this._secretKey);
+
+    console.log('Signature-callCalypso-timestamp: ', timestamp);
+    console.log('Signature-callCalypso-signature: ', signature);
+    console.log('Signature-callCalypso-requestBodyStr: ', requestBodyStr);
+    console.log('Signature-callCalypso-requestBody: ', requestBody);
+    console.log('Endpoin: ', CALYPSO_ENDPOINT + route);
 
     const response = await fetch(CALYPSO_ENDPOINT + route, {
       method: 'POST',
       headers: {
         accept: '*/*',
+        Key: this._publicKey,
+        Sign: signature,
         'content-type': 'application/json',
-        key: this._publicKey,
-        sign: signature,
       },
       body: requestBodyStr,
     });
 
-    const responseBody = await response.json();
+    console.log('Signature-callCalypso-response: ', response);
 
-    if (!response.ok) {
-      const errorParsingResult = ErrorSchema.safeParse(responseBody);
-      if (errorParsingResult.success) {
-        const error = errorParsingResult.data;
+    let responseBody;
+    if (route === 'exchange/pairs') {
+      const tempResponseBody = await response.json();
+
+      if (typeof tempResponseBody === 'object' && tempResponseBody !== null && 'currencyPairs' in tempResponseBody) {
+        console.log('CurrencyPairs: ', tempResponseBody.currencyPairs);
+        responseBody = Object.entries(tempResponseBody.currencyPairs as Record<string, unknown>).map(([key, value]) => ({
+          name: key,
+          pairs: value,
+        }));
+        console.log('Signature-callCalypso-responseBody: ', responseBody);
         return {
-          kind: 'API_ERROR',
-          traceId: error.traceId,
-          errorCode: error.errorCode,
-          message: error.message,
+          kind: 'OK',
+          payload: responseBody,
         };
       }
-    }
-
-    const parsingResult = schema.safeParse(responseBody);
-    if (parsingResult.success) {
-      return { kind: 'OK', payload: parsingResult.data };
     } else {
-      return { kind: 'UNKNOWN_ERROR', message: `failed to parse response: ${parsingResult.error}` };
+      responseBody = await response.json();
+      console.log('Signature-callCalypso-responseBody: ', responseBody);
+
+      if (!response.ok) {
+        const errorParsingResult = ErrorSchema.safeParse(responseBody);
+        if (errorParsingResult.success) {
+          const error = errorParsingResult.data;
+          return {
+            kind: 'API_ERROR',
+            traceId: error.traceId,
+            errorCode: error.errorCode,
+            message: error.message,
+          };
+        }
+      }
+      const parsingResult = schema.safeParse(responseBody);
+      if (parsingResult.success) {
+        return { kind: 'OK', payload: parsingResult.data };
+      } else {
+        return { kind: 'UNKNOWN_ERROR', message: `failed to parse response: ${parsingResult.error}` };
+      }
     }
   }
 }

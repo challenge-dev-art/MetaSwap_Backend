@@ -2,14 +2,14 @@ import { Request } from 'express';
 
 export interface SwapRatesRequest extends Request {
   body: {
-    currencyFrom: string;
-    currencyTo: number;
+    sourceCurrency: string;
+    destinationCurrency: string;
   };
 }
 
 export interface SwapRatesResponse {
   currencyFrom: string;
-  currencyTo: number;
+  currencyTo: string;
   rate: number;
 }
 
