@@ -22,10 +22,7 @@ import { OtpRoute } from './routes/otp.route';
 import { VerificationRoute } from './routes/verification.route';
 import { schedule } from './cron';
 import { logger } from './utils/logger';
-import { SwapRatesRoute } from './routes/swap-rate.route';
-import { SwapCurrenciesRoute } from './routes/swap-currencies.route';
-import { SwapCreatesRoute } from './routes/swap-create.route';
-import { SwapGetsRoute } from './routes/swap-get.route';
+import { SwapsRoute } from './routes/swap.route';
 
 const app = new App([
   new StatusRoute(),
@@ -46,10 +43,7 @@ const app = new App([
   new AutoconvertsRoute(),
   new OtpRoute(),
   new VerificationRoute(),
-  new SwapRatesRoute(),
-  new SwapCurrenciesRoute(),
-  new SwapCreatesRoute(),
-  new SwapGetsRoute(),
+  new SwapsRoute()
 ]);
 
 app.listen();

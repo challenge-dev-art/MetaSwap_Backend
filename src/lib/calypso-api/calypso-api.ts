@@ -4,7 +4,7 @@ import { createHmac } from 'node:crypto';
 import { ErrorSchema } from './schemas/error-reponse';
 import { ZodType } from 'zod';
 import { PayoutSchema } from './schemas/payout-schema';
-import { ExchangeSchema, ExchangePairSchema, AverageRateSchem } from './schemas/exchange-schema';
+import { ExchangeSchema, ExchangePairSchema, AverageRateSchem, PreCalculateExchangeSchema } from './schemas/exchange-schema';
 
 export interface GetInvoiceOpts {
   id?: string;
@@ -194,13 +194,13 @@ export class CalypsoApi {
    * @returns
    */
   public async preCalculateExchange(opts: CreateExchangeOpts) {
-    return await this._callCalypso('exchange/pre-calculate', ExchangeSchema, {
+    return await this._callCalypso('exchange/pre-calculate', PreCalculateExchangeSchema, {
       account: this._account,
       payload: {
         sourceCurrency: opts.sourceCurrency,
         destinationCurrency: opts.destinationCurrency,
         amount: opts.amount,
-      },
+      }
     });
   }
 

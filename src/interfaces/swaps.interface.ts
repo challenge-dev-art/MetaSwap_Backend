@@ -47,3 +47,26 @@ export interface RequestWithUser extends Request {
 export interface SwapsListing {
   items: Swap[];
 }
+
+export interface SwapPreDisplayRequest extends Request {
+  body: {
+    sourceCurrency: string;
+    destinationCurrency: string;
+    amount: number;
+  };
+}
+
+export interface SwapPreDisplay {
+  sourceCurrency: string;
+  destinationCurrency: string;
+  amount: number;
+}
+
+export interface SwapUpdateRequest {
+  body: {
+    id: number;
+    hashId: number;
+    state: SwapStatus;
+    userId: number;
+  };
+}

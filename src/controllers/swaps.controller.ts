@@ -1,20 +1,23 @@
 //import { NextFunction, Response } from 'express';
-import { NextFunction, Response, Request } from 'express';
-import { RequestWithUser } from '@/interfaces/swaps.interface';
+import { NextFunction, Response, Request, response } from 'express';
+import { RequestWithUser, SwapPreDisplayRequest, SwapUpdateRequest } from '@/interfaces/swaps.interface';
+import { prisma } from '@/prisma-client';
 import Container from 'typedi';
 import { SwapsService } from '@services/swaps.service';
 import { CreateSwapsDto } from '@dtos/swaps.dto';
 import { CreatePayoutErrorResponse } from '@interfaces/payouts.interface';
+import { SwapRatesRequest, SwapRatesResponse } from '@/interfaces/swap-rates.interface';
 import { assertNever } from '@utils/assertNever';
 import { plainToClass } from 'class-transformer';
 import { validate } from 'class-validator';
+import { bigint } from 'zod';
 
 export class SwapsController {
   public swaps = Container.get(SwapsService);
   public getSwaps = async (_req: RequestWithUser, res: Response, _next?: NextFunction): Promise<void> => {
     try {
       //const listing = await this.swaps.getSwaps(_req.user.id);
-      const body = _req.body.id;
+      const body = Number(_req.query.id);
       const getSwapResult = await this.swaps.getSwaps(body);
       console.log('getSwapResult: ', getSwapResult);
       switch (getSwapResult.kind) {
@@ -117,15 +120,7 @@ export class SwapsController {
     }
   };
 
-  // public getCurrencyPairs = async (_req: RequestWithUser, res: Response, _next?: NextFunction): Promise<void> => {
-  //   try {
-  //     const listing = await this.swaps.getCurrencies();
-  //     res.json(listing);
-  //   } catch (error) {
-  //     res.status(500).json({ error: error.message });
-  //   }
-  // };
-  public getCurrencyPairs = async (_req: Request, res: Response, _next?: NextFunction): Promise<void> => {
+  public getCurrencyPairs = async (_req: RequestWithUser, res: Response, _next?: NextFunction): Promise<void> => {
     try {
       console.log('Controller-getCurrencyPairs');
 
@@ -136,4 +131,49 @@ export class SwapsController {
       res.status(500).json({ error: error.message });
     }
   };
+
+  public getRates = async (_req: SwapRatesRequest, res: Response, _next?: NextFunction): Promise<void> => {
+    try {
+      const { sourceCurrency, destinationCurrency } = _req.body;
+      console.log(sourceCurrency, destinationCurrency);
+      const getRateResult = await this.swaps.getRates(sourceCurrency, destinationCurrency);
+      console.log('getRateResult: ', getRateResult);
+      res.json(getRateResult);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  };
+
+  public preCalculate = async (_req: SwapPreDisplayRequest, res: Response, _next?: NextFunction): Promise<void> => {
+    try {
+      const { sourceCurrency, destinationCurrency, amount } = _req.body;
+      console.log(sourceCurrency, destinationCurrency, amount);
+      const preCalculateResult = await this.swaps.preCalculate(sourceCurrency, destinationCurrency, amount);
+      console.log('preCalculateResult: ', preCalculateResult);
+      res.json(preCalculateResult);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  public swapUpdate = async (_req: RequestWithUser, res: Response, _next?: NextFunction): Promise<void> => {
+    try {
+      const { id, state } = _req.body;
+      const userId = _req.user.id;
+      console.log('userId: ', userId);
+      console.log(state, userId);
+      const swapUpdateResult = await prisma.swaps.update({
+        where: {
+          id: id
+        },
+        data: {
+          state: state,
+        }
+      })
+        console.log(swapUpdateResult);
+        res.status(200).json({ message: 'Swap updated successfully' });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
 }

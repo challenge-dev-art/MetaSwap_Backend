@@ -41,3 +41,9 @@ export const ExchangePairSchema = object({
 export const AverageRateSchem = object({
   rate: number(),
 });
+
+export const PreCalculateExchangeSchema = object({
+  sourceCurrency: string(),
+  destinationCurrency: string(),
+  amount: number(),
+});

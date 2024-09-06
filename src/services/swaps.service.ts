@@ -1,7 +1,7 @@
 import Container, { Service } from 'typedi';
 import { CalypsoService } from './calypso.service';
 import { CurrencyType } from '@prisma/client';
-import { Swap, SwapsListing, GetSwap } from '@/interfaces/swaps.interface';
+import { Swap, SwapsListing, GetSwap, SwapPreDisplay } from '@/interfaces/swaps.interface';
 import { prisma } from '@/prisma-client';
 import { Currency } from '@/interfaces/currencies.interface';
 import { swapCurrencies } from '@/config/swap-currencies';
@@ -16,6 +16,7 @@ export interface CreateSwapOpts {
   sourceCurrency: string;
   destinationCurrency: string;
 }
+
 export type CreateSwapResult =
   | {
       kind: 'OK';
@@ -57,7 +58,43 @@ export type GetCurrencyPairResult =
     }
   | {
       kind: 'SOMETHING_WENT_WRONG';
-    };
+    }
+  | {
+    kind: 'API_ERROR';
+    message: string;
+  };
+
+export type GetRateResult =
+  | {
+      kind: 'OK';
+      rate: number;
+    }
+  | {
+      kind: 'UNKNOWN_ERROR';
+    }
+  | {
+      kind: 'SOMETHING_WENT_WRONG';
+    }
+  | {
+    kind: 'API_ERROR';
+    message: string;
+  };
+
+export type GetPreCalculationResult =
+  | {
+      kind: 'OK';
+      estimateResult: SwapPreDisplay;
+    }
+  | {
+      kind: 'UNKNOWN_ERROR';
+    }
+  | {
+      kind: 'SOMETHING_WENT_WRONG';
+    }
+  | {
+    kind: 'API_ERROR';
+    message: string;
+  };
 
 @Service()
 export class SwapsService {
@@ -68,32 +105,6 @@ export class SwapsService {
     this._currencyIdToDecimals = new Map(swapCurrencies.map(currency => [currency.id, currency.decimals]));
   }
 
-  // public async getSwaps(userId: number): Promise<SwapsListing> {
-  //   const swaps = await prisma.swaps.findMany({
-  //     where: {
-  //       userId,
-  //     },
-  //     select: {
-  //       id: true,
-  //       currencyToId: true,
-  //       currencyFromId: true,
-  //       value: true,
-  //     },
-  //   });
-
-  //   const items: Swap[] = swaps.map((swapRow): Swap => {
-  //     const swap: Swap = {
-  //       id: swapRow.id.toString(),
-  //       currencyFromId: swapRow.currencyFromId,
-  //       currencyToId: swapRow.currencyToId,
-  //       userId: userId,
-  //       value: swapRow.value,
-  //     };
-  //     return swap;
-  //   });
-
-  //   return { items } satisfies SwapsListing;
-  // }
   public async getSwaps(id: number): Promise<GetSwapResult> {
     try {
       console.log('id: ', id);
@@ -107,17 +118,17 @@ export class SwapsService {
           throw new Error(ret.message);
         }
         case 'OK': {
-          const swap: GetSwap = {
-            id: ret.payload.id,
-            account: ret.payload.account,
-            sourceCurrency: ret.payload.sourceCurrency,
-            sourceAmount: ret.payload.sourceAmount,
-            destinationCurrency: ret.payload.destinationCurrency,
-            destinationAmount: ret.payload.destinationAmount,
-            state: ret.payload.state,
-            createdDate: ret.payload.createdDate
-          };
-          return { kind: 'OK', swap: swap };
+            const swap: GetSwap = {
+              id: ret.payload.id,
+              account: ret.payload.account,
+              sourceCurrency: ret.payload.sourceCurrency,
+              sourceAmount: ret.payload.sourceAmount,
+              destinationCurrency: ret.payload.destinationCurrency,
+              destinationAmount: ret.payload.destinationAmount,
+              state: ret.payload.state,
+              createdDate: ret.payload.createdDate
+            };
+            return { kind: 'OK', swap: swap };
         }
         default: {
           assertNever(ret);
@@ -246,6 +257,68 @@ export class SwapsService {
     } catch (e) {
       logger.error(`[${this._tagName}] failed to get currency pairs for swap: ${e}`);
       return { kind: 'UNKNOWN_ERROR' };
+    }
+  }
+
+  public async getRates(sourceCurrency: string, destinationCurrency: string): Promise<GetRateResult> {
+    try {
+      const currencyPair = {
+        sourceCurrency: sourceCurrency,
+        destinationCurrency: destinationCurrency
+      };
+      const ret = await this._calypso.getAverageRate(currencyPair);
+      console.log('ret: ', ret);
+      switch (ret.kind) {
+        case 'API_ERROR': {
+          return { kind: 'API_ERROR', message: ret.message };
+        }
+        case 'UNKNOWN_ERROR': {
+          throw new Error(ret.message);
+        }
+        case 'OK': {
+            return { kind: 'OK', rate: ret.payload.rate};
+        }
+        default: {
+          assertNever(ret);
+        }
+      }
+    } catch (error) {
+      logger.error(`${this._tagName} failed to get rate for swap: ${error}`);
+      return { kind: 'UNKNOWN_ERROR' }
+    }
+  }
+
+  public async preCalculate(sourceCurrency: string, destinationCurrency: string, amount: number): Promise<GetPreCalculationResult> {
+    try {
+      const currencyPair = {
+        sourceCurrency: sourceCurrency,
+        destinationCurrency: destinationCurrency,
+        amount: amount
+      };
+      const ret = await this._calypso.preCalculateExchange(currencyPair);
+      console.log('ret: ', ret);
+      switch (ret.kind) {
+        case 'API_ERROR': {
+          return { kind: 'API_ERROR', message: ret.message };
+        }
+        case 'UNKNOWN_ERROR': {
+          throw new Error(ret.message);
+        }
+        case 'OK': {
+          const estimateResult = {
+            sourceCurrency: ret.payload.sourceCurrency,
+            destinationCurrency: ret.payload.destinationCurrency,
+            amount: ret.payload.amount
+          };
+            return { kind: 'OK', estimateResult: estimateResult};
+        }
+        default: {
+          assertNever(ret);
+        }
+      }
+    } catch (error) {
+      logger.error(`${this._tagName} failed to get rate for swap: ${error}`);
+      return { kind: 'UNKNOWN_ERROR' }
     }
   }
 }
