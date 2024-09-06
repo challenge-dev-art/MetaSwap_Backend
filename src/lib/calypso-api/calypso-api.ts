@@ -306,7 +306,7 @@ export class CalypsoApi {
       body: requestBodyStr,
     });
 
-    console.log('Signature-callCalypso-response: ', response);
+    //console.log('Signature-callCalypso-response: ', response);
 
     let responseBody;
     if (route === 'exchange/pairs') {
@@ -321,7 +321,7 @@ export class CalypsoApi {
         console.log('Signature-callCalypso-responseBody: ', responseBody);
         return {
           kind: 'OK',
-          payload: responseBody,
+          payload: responseBody as T,
         };
       }
     } else {
@@ -332,6 +332,7 @@ export class CalypsoApi {
         const errorParsingResult = ErrorSchema.safeParse(responseBody);
         if (errorParsingResult.success) {
           const error = errorParsingResult.data;
+          console.log('error: ', error);
           return {
             kind: 'API_ERROR',
             traceId: error.traceId,
@@ -341,11 +342,25 @@ export class CalypsoApi {
         }
       }
       const parsingResult = schema.safeParse(responseBody);
+    
       if (parsingResult.success) {
         return { kind: 'OK', payload: parsingResult.data };
       } else {
         return { kind: 'UNKNOWN_ERROR', message: `failed to parse response: ${parsingResult.error}` };
       }
+
+      // const temp = {
+      //   id: 134545353,
+      //   account: '0x1234567890123456789012345678901234567890',
+      //   sourceCurrency: 'ETH',
+      //   destinationCurrency: 'USDT',
+      //   sourceAmount: 1,
+      //   destinationAmount: 2400,
+      //   state: 'IN_PROGRESS',
+      //   createDate: '2023-07-28T13:13:13.000Z'
+      // }
+      // return { kind: 'OK', payload: temp as T };
+
     }
   }
 }

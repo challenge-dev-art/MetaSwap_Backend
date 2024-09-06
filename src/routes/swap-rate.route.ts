@@ -13,13 +13,13 @@ export class SwapRatesRoute implements Routes {
   }
 
   private initializeRoutes() {
-    // this.router.get(`${this.path}`, AuthMiddleware(), (req, res, next) => {
-    //   this.SwapRates.getRates(req, res, next);
-    // });
-    this.router.get(`${this.path}`, (req, res, next) => {
-      console.log('Route-getRates');
-      console.log(req.body);
+    this.router.get(`${this.path}`, AuthMiddleware(), (req, res, next) => {
       this.SwapRates.getRates(req, res, next);
     });
+    // this.router.get(`${this.path}`, (req, res, next) => {
+    //   console.log('Route-getRates');
+    //   console.log(req.body);
+    //   this.SwapRates.getRates(req, res, next);
+    // });
   }
 }

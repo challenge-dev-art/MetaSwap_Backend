@@ -13,11 +13,9 @@ export class SwapCreatesRoute implements Routes {
   }
 
   private initializeRoutes() {
-    // this.router.post(`${this.path}`, AuthMiddleware(), (req, res, next) => {
-    //   this.SwapsController.createSwaps(req, res, next);
-    // });
-
-    this.router.post(`${this.path}`, (req, res, next) => {
+    this.router.post(`${this.path}`, AuthMiddleware(), (req, res, next) => {
+      // console.log('req.body: ', req.body);
+      // console.log('req.user: ', req.user);
       this.SwapsController.createSwaps(req, res, next);
     });
   }

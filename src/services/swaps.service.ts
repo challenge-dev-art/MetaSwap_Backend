@@ -1,7 +1,7 @@
 import Container, { Service } from 'typedi';
 import { CalypsoService } from './calypso.service';
 import { CurrencyType } from '@prisma/client';
-import { Swap, SwapsListing } from '@/interfaces/swaps.interface';
+import { Swap, SwapsListing, GetSwap } from '@/interfaces/swaps.interface';
 import { prisma } from '@/prisma-client';
 import { Currency } from '@/interfaces/currencies.interface';
 import { swapCurrencies } from '@/config/swap-currencies';
@@ -26,17 +26,25 @@ export type CreateSwapResult =
     }
   | {
       kind: 'INVALID_ADDRESS_ERR';
-    };
+    }
+  | {
+    kind: 'API_ERROR';
+    message: string;
+  };
 export type GetSwapResult =
   | {
       kind: 'OK';
-      swap: Swap;
+      swap: GetSwap;
     }
   | {
       kind: 'UNSUPPORTED_CURRENCY_ERR';
     }
   | {
       kind: 'INVALID_ADDRESS_ERR';
+    }
+  | {
+      kind: 'API_ERROR';
+      message: string;
     };
 
 export type GetCurrencyPairResult =
@@ -93,15 +101,23 @@ export class SwapsService {
       console.log('ret: ', ret);
       switch (ret.kind) {
         case 'API_ERROR': {
-          //throw new Error(`${ret.errorCode} ${ret.traceId} ${ret.message}`);
           return { kind: 'API_ERROR', message: ret.message };
         }
         case 'UNKNOWN_ERROR': {
           throw new Error(ret.message);
         }
         case 'OK': {
-          //currencyPairs = ret.payload;
-          break;
+          const swap: GetSwap = {
+            id: ret.payload.id,
+            account: ret.payload.account,
+            sourceCurrency: ret.payload.sourceCurrency,
+            sourceAmount: ret.payload.sourceAmount,
+            destinationCurrency: ret.payload.destinationCurrency,
+            destinationAmount: ret.payload.destinationAmount,
+            state: ret.payload.state,
+            createdDate: ret.payload.createdDate
+          };
+          return { kind: 'OK', swap: swap };
         }
         default: {
           assertNever(ret);
@@ -157,46 +173,41 @@ export class SwapsService {
           throw new Error(ret.message);
         }
         case 'OK': {
-          //currencyPairs = ret.payload;
-          break;
+          const currencySwapInformation = ret.payload;
+          const createdSwap = await prisma.swaps.create({
+            data: {
+              sourceCurrency: currencySwapInformation.sourceCurrency as CurrencyType,
+              destinationCurrency: currencySwapInformation.destinationCurrency as CurrencyType,
+              sourceAmount: currencySwapInformation.sourceAmount,
+              destinationAmount: currencySwapInformation.destinationAmount,
+              userId: opts.userId,
+              hashId: currencySwapInformation.id,
+              state: 'IN_PROGRESS',
+            },
+          });
+
+          const swap: Swap = {
+            id: createdSwap.id.toString(),
+            sourceCurrency: createdSwap.sourceCurrency,
+            destinationCurrency: createdSwap.destinationCurrency,
+            userId: createdSwap.userId,
+            sourceAmount: createdSwap.sourceAmount,
+            destinationAmount: createdSwap.destinationAmount,
+            hashId: Number(createdSwap.hashId),
+            state: createdSwap.state
+          };
+      
+          return { kind: 'OK', swap: swap };
+          //break;
         }
         default: {
           assertNever(ret);
         }
       }
-
-      if (ret && typeof ret !== 'undefined') {
-        // return {
-        //   kind: 'OK',
-        //   ret.payload,
-        // };
-      }
-      //return { kind: 'SOMETHING_WENT_WRONG' };
     } catch (error) {
       logger.error(`${this._tagName} failed to create exchange for swap: ${error}`);
       return { kind: 'UNSUPPORTED_CURRENCY_ERR' };
     }
-
-    const createdSwap = await prisma.swaps.create({
-      data: {
-        currencyFromId: opts.currencyFromId as CurrencyType,
-        currencyToId: opts.currencyToId as CurrencyType,
-        value: opts.value,
-        userId: opts.userId,
-        state: 'IN_PROGRESS',
-      },
-    });
-
-    const swap: Swap = {
-      id: createdSwap.id.toString(),
-      currencyFromId: createdSwap.currencyFromId,
-      currencyToId: createdSwap.currencyToId,
-      userId: createdSwap.userId,
-      value: createdSwap.value,
-      state: createdSwap.state,
-    };
-
-    return { kind: 'OK', swap: swap };
   }
 
   public async getCurrencies(): Promise<GetCurrencyPairResult> {

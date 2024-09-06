@@ -1,8 +1,8 @@
-import { number, object, string, optional, boolean, array } from 'zod';
+import { number, object, string, optional, boolean, array, date} from 'zod';
 import { ExchangeStateSchema } from './exchange-state-schema';
 
 export const ExchangeSchema = object({
-  id: string(),
+  id: number(),
   account: string(),
   sourceCurrency: string(),
   sourceAmount: number(),

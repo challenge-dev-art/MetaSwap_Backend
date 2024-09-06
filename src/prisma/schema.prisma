@@ -88,11 +88,13 @@ model Asset {
 
 model Swaps {
   id             Int          @id @default(autoincrement())
-  currencyFromId CurrencyType
-  currencyToId   CurrencyType
-  value          Int
+  sourceCurrency CurrencyType
+  destinationCurrency   CurrencyType
+  sourceAmount      Int
+  destinationAmount Int
   user           User         @relation(fields: [userId], references: [id])
   userId         Int
+  hashId         BigInt
   createdAt      DateTime     @default(now())
   state          SwapStatus
 

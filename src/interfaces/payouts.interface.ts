@@ -23,6 +23,6 @@ export interface PayoutListing {
 }
 
 export interface CreatePayoutErrorResponse {
-  kind: 'INSUFFICIENT_FUNDS_ERR' | 'UNSUPPORTED_CURRENCY_ERR' | 'WRONG_CRYPTO_ADDRESS_ERR';
+  kind: 'INSUFFICIENT_FUNDS_ERR' | 'UNSUPPORTED_CURRENCY_ERR' | 'WRONG_CRYPTO_ADDRESS_ERR' | 'API_ERROR';
   message: string;
 }

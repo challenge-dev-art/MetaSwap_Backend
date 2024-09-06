@@ -1,11 +1,14 @@
 -- CreateTable
 CREATE TABLE `Swaps` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `currencyFromId` ENUM('BTC', 'ETH', 'USDT_TRX', 'USDT', 'LTC', 'TRX') NOT NULL,
-    `currencyToId` ENUM('BTC', 'ETH', 'USDT_TRX', 'USDT', 'LTC', 'TRX') NOT NULL,
-    `value` INTEGER NOT NULL,
+    `sourceCurrency` ENUM('BTC', 'ETH', 'USDT_TRX', 'USDT', 'LTC', 'TRX') NOT NULL,
+    `destinationCurrency` ENUM('BTC', 'ETH', 'USDT_TRX', 'USDT', 'LTC', 'TRX') NOT NULL,
+    `sourceAmount` INTEGER NOT NULL,
+    `destinationAmount` INTEGER NOT NULL,
     `userId` INTEGER NOT NULL,
+    `hashId` BIGINT NOT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `state` ENUM('IN_PROGRESS', 'COMPLETED', 'FAILED') NOT NULL,
 
     INDEX `Swaps_userId_idx`(`userId`),
     PRIMARY KEY (`id`)

@@ -8,7 +8,20 @@ export interface Swap {
   sourceAmount: number;
   destinationAmount: number;
   userId: number;
-  amount: number;
+  hashId: Number;
+  state: SwapStatus;
+}
+
+export interface GetSwap {
+  id: number;
+  sourceCurrency: string;
+  destinationCurrency: string;
+  sourceAmount: number;
+  destinationAmount: number;
+  account: string;
+  createdDate: string;
+  // userId: number;
+  // hashId: Number;
   state: SwapStatus;
 }
 
