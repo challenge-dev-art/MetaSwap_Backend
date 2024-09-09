@@ -47,6 +47,8 @@ export const AuthMiddleware = () => {
   //       }
   //       logger.warn(`auth token missing; use dev user ${tgId}`);
   //       const findUser = await userService.findUserByTgId(tgId);
+  //       // const findUser = await userService.findUserByTgId(13);
+  //       //console.log("findUser: ", findUser);
   //       if (findUser === null) {
   //         next(new HttpException(401, 'user not found'));
   //         return;

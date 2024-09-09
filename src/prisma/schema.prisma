@@ -23,6 +23,9 @@ model User {
   email                       String?
   priceCurrency               String?
   totpSecret                  String?
+  userRole                    Role
+  userPermission              Permission
+  adminPermission             Permission
   createdAt                   DateTime                      @default(now())
   Asset                       Asset[]
   Transaction                 Transaction[]
@@ -38,6 +41,43 @@ model User {
   freezeTransactions          FreezeTransaction[]
   unfreezeTransactions        UnfreezeTransaction[]
   Swaps                       Swaps[]
+  feedbacks                   Feedback[]  
+  news                        News[]
+  documents                   Document[]                     
+}
+
+model Feedback {
+  id         Int              @id @default(autoincrement())
+  user       User             @relation(fields: [userId], references: [id])
+  userId     Int
+  title      String
+  content    String
+  createdAt  DateTime @default(now())
+}
+
+model News {
+  id         Int              @id @default(autoincrement())
+  user       User             @relation(fields: [userId], references: [id])
+  userId     Int
+  title      String
+  content    String
+  createdAt  DateTime @default(now())
+}
+
+model Document {
+  id         Int              @id @default(autoincrement())
+  user       User             @relation(fields: [userId], references: [id])
+  userId     Int
+  title      String
+  content    String
+  createdAt  DateTime @default(now())
+}
+
+model Fee {
+  id         Int              @id @default(autoincrement())
+  type       FeeType
+  amount     Float
+  createdAt  DateTime @default(now())
 }
 
 model EmailUpdateRequest {
@@ -90,8 +130,8 @@ model Swaps {
   id             Int          @id @default(autoincrement())
   sourceCurrency CurrencyType
   destinationCurrency   CurrencyType
-  sourceAmount      Int
-  destinationAmount Int
+  sourceAmount      Float
+  destinationAmount Float
   user           User         @relation(fields: [userId], references: [id])
   userId         Int
   hashId         BigInt
@@ -299,5 +339,22 @@ enum SwapStatus {
   IN_PROGRESS
   COMPLETED
   FAILED
+}
+
+enum Role {
+  USER
+  ADMIN
+  SUPER
+}
+
+enum Permission {
+  UNBLOCK
+  BLOCK
+}
+
+enum FeeType {
+  RECEIVE
+  SEND
+  EXCHANGE
 }
 

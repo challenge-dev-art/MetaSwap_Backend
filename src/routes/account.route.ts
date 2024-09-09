@@ -4,12 +4,16 @@ import { AuthMiddleware } from '@/middlewares/auth.middleware';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { AccountController } from '@/controllers/account.controller';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
+import { AdminValidationMiddleware } from '@/middlewares/admin-validation.middleware';
+import { SuperValidationMiddleware } from '@/middlewares/super-validation.middleware';
 import {
   ConfirmEmailUpdateRequestDto,
   RequestEmailUpdateRequestDto,
   UpdateAccountCurrencyDto,
   UpdateAccountEmailDto,
   UpdateAccountLanguageDto,
+  UpdateUserPermissionDto,
+  AddAdminDto
 } from '@/dtos/account.dto';
 
 export class AccountRoute implements Routes {
@@ -22,9 +26,58 @@ export class AccountRoute implements Routes {
   }
 
   private initializeRoutes() {
+
+    this.router.get(`${this.path}/get-user`, AuthMiddleware(), AdminValidationMiddleware(), (req: RequestWithUser, res, next) => {
+      this.user.getUserAccount(req, res, next).catch(next);
+    });
+
+    this.router.get(`${this.path}/get-alluser`, AuthMiddleware(), AdminValidationMiddleware(), (req: RequestWithUser, res, next) => {
+      this.user.getAllUser(req, res, next).catch(next);
+    });
+
     this.router.get(`${this.path}`, AuthMiddleware(), (req: RequestWithUser, res, next) => {
       this.user.getUser(req, res, next).catch(next);
     });
+
+    this.router.post(
+      `${this.path}/update-user-permission`,
+      AuthMiddleware(),
+      AdminValidationMiddleware(),
+      ValidationMiddleware(UpdateUserPermissionDto),
+      (req: RequestWithUser, res, next) => {
+        this.user.updateUserPermission(req, res, next);
+      },
+    );
+
+    this.router.post(
+      `${this.path}/update-admin-permission`,
+      AuthMiddleware(),
+      SuperValidationMiddleware(),
+      ValidationMiddleware(UpdateUserPermissionDto),
+      (req: RequestWithUser, res, next) => {
+        this.user.updateAdminPermission(req, res, next);
+      },
+    );
+
+    this.router.post(
+      `${this.path}/add-admin`,
+      AuthMiddleware(),
+      SuperValidationMiddleware(),
+      ValidationMiddleware(AddAdminDto),
+      (req: RequestWithUser, res, next) => {
+        this.user.addAdmin(req, res, next);
+      },
+    );
+
+    this.router.post(
+      `${this.path}/remove-admin`,
+      AuthMiddleware(),
+      SuperValidationMiddleware(),
+      ValidationMiddleware(AddAdminDto),
+      (req: RequestWithUser, res, next) => {
+        this.user.removeAdmin(req, res, next);
+      },
+    );
 
     this.router.post(
       `${this.path}/update-currency`,

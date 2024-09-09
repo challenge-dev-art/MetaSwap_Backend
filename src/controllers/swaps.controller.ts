@@ -1,6 +1,6 @@
 //import { NextFunction, Response } from 'express';
-import { NextFunction, Response, Request, response } from 'express';
-import { RequestWithUser, SwapPreDisplayRequest, SwapUpdateRequest } from '@/interfaces/swaps.interface';
+import { NextFunction, Response, Request } from 'express';
+import { RequestWithUser, SwapPreDisplayRequest } from '@/interfaces/swaps.interface';
 import { prisma } from '@/prisma-client';
 import Container from 'typedi';
 import { SwapsService } from '@services/swaps.service';
@@ -10,8 +10,6 @@ import { SwapRatesRequest, SwapRatesResponse } from '@/interfaces/swap-rates.int
 import { assertNever } from '@utils/assertNever';
 import { plainToClass } from 'class-transformer';
 import { validate } from 'class-validator';
-import { bigint } from 'zod';
-
 export class SwapsController {
   public swaps = Container.get(SwapsService);
   public getSwaps = async (_req: RequestWithUser, res: Response, _next?: NextFunction): Promise<void> => {
@@ -104,7 +102,7 @@ export class SwapsController {
         break;
       }
       case 'OK': {
-        res.status(201).json(createSwapResult.swap);
+        res.status(201).json(createSwapResult);
         break;
       }
       case 'API_ERROR': {
@@ -170,9 +168,12 @@ export class SwapsController {
           state: state,
         }
       })
-        console.log(swapUpdateResult);
-        res.status(200).json({ message: 'Swap updated successfully' });
+        const result = {...swapUpdateResult, hashId: swapUpdateResult.hashId.toString()};
+        console.log(result);
+        //res.json(result);
+        res.json({ kind: 'OK', user: result });
     } catch (error) {
+      console.error(error);
       res.status(500).json({ error: error.message });
     }
   }

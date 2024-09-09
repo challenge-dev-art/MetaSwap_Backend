@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsInt } from 'class-validator';
+import { Permission, Role } from '@prisma/client';
 
 export class UpdateAccountCurrencyDto {
   @IsString()
@@ -28,4 +29,20 @@ export class ConfirmEmailUpdateRequestDto {
   @IsString()
   @IsNotEmpty()
   public code: string;
+}
+
+export class UpdateUserPermissionDto {
+  @IsInt()
+  @IsNotEmpty()
+  public userId: number;
+
+  @IsString()
+  @IsNotEmpty()
+  public permission: Permission;
+}
+
+export class AddAdminDto {
+  @IsInt()
+  @IsNotEmpty()
+  public userId: number;
 }

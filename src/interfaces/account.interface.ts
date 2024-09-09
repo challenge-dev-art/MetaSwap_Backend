@@ -1,5 +1,25 @@
+import { array } from 'zod';
 import { FiatCurrency } from './currencies.interface';
 
+export interface UserAccount {
+  id: number;
+  publicId: string;
+  telegramUserId: string;
+  telegramUsername: string | null;
+  telegramPhoto: string | null;
+  telegramPhotoMime: string | null;
+  firstName: string;
+  lastName: string | null;
+  language: string | null;
+  email: string | null;
+  priceCurrency: string | null;
+  totpSecret: string | null;
+  createdAt: string;
+}
+
+export interface AllUserAccount {
+  users: UserAccount[];
+}
 export interface Account {
   id: string; // readable user id
   telegramUsername: string | null; // не у всех пользователей Telegram определен username

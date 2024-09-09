@@ -1,11 +1,11 @@
 import { Service } from 'typedi';
-import { User } from '@prisma/client';
+import { User, Permission, Role } from '@prisma/client';
 import { prisma } from '@/prisma-client';
 import { DEFAULT_LANGUAGE, languages } from '@/config/languages';
 import { breezeid } from 'breezeid';
 import * as z from 'zod';
 import { DEFAULT_PRICE_CURRENCY, priceCurrencies } from '@/config/price-currencies';
-import { Account as AccountView } from '@/interfaces/account.interface';
+import { AllUserAccount, UserAccount, Account as AccountView } from '@/interfaces/account.interface';
 import { FiatCurrency } from '@/interfaces/currencies.interface';
 import { currencies } from '@/config/currencies';
 import { Container } from 'typedi';
@@ -31,6 +31,14 @@ export interface UpsertUserOpts {
 }
 
 export type UpdatePriceCurrencyResult = { kind: 'OK' } | { kind: 'USER_NOT_FOUND' } | { kind: 'UNSUPPORTED_CURRENCY' };
+
+export type UpdateUserPermissionResult = { kind: 'OK', user: User } | { kind: 'USER_NOT_FOUND' } | { kind: 'INVALID_PERMISSION' };
+
+export type UpdateAdminPermissionResult = { kind: 'OK', user: User } | { kind: 'ADMIN_NOT_FOUND' } | { kind: 'INVALID_PERMISSION' };
+
+export type AddAdminResult = { kind: 'OK', user: User } | { kind: 'USER_NOT_FOUND' };
+
+export type RemoveAdminResult = { kind: 'OK', user: User } | { kind: 'USER_NOT_FOUND' };
 
 export type UpdateLanguageResult = { kind: 'OK' } | { kind: 'USER_NOT_FOUND' } | { kind: 'UNSUPPORTED_LANGUAGE' };
 
@@ -88,6 +96,113 @@ export class UsersService {
       return null;
     }
     return user.id;
+  }
+
+  public async getUserAccount(userId: number): Promise<UserAccount> {
+    try {
+      const result = await this.user.findUniqueOrThrow({
+        where: {
+          id: userId,
+        },
+        include: {
+          Asset: true,
+          Transaction: true,
+          internalTransferUserOutputs: true,
+          internalTransferUserInputs: true,
+          Autoconvert: true,
+          verification: true,
+          verificationRequests: true,
+          emailUpdateRequests: true,
+          deposits: true,
+          payouts: true,
+          frozenAmounts: true,
+          freezeTransactions: true,
+          unfreezeTransactions: true,
+          Swaps: true
+        }
+      });
+      
+      const user = {
+        ...result,
+        telegramUserId: result.telegramUserId.toString(),
+        createdAt: result.createdAt.toISOString(),
+        Transaction: result.Transaction.map(transaction => ({
+          ...transaction,
+          createdAt: transaction.createdAt.toISOString(),
+        })),
+        internalTransferUserOutputs: result.internalTransferUserOutputs.map(output => ({
+          ...output,
+          createdAt: output.createdAt.toISOString(),
+        })),
+        internalTransferUserInputs: result.internalTransferUserInputs.map(output => ({
+          ...output,
+          createdAt: output.createdAt.toISOString(),
+        })),
+        Swaps: result.Swaps.map(swap => ({
+          ...swap,
+          hashId: swap.hashId.toString(),
+          createdAt: swap.createdAt.toISOString(),
+        })),
+
+      };
+      
+      return user;
+    } catch (error) {
+      logger.error(`${this._tagName} failed to get user account: ${error}`);
+      throw error;
+    }
+  }
+
+  public async getAllUser(): Promise<AllUserAccount> {
+    try {
+      const result = await this.user.findMany({
+        include: {
+          Asset: true,
+          Transaction: true,
+          internalTransferUserOutputs: true,
+          internalTransferUserInputs: true,
+          Autoconvert: true,
+          verification: true,
+          verificationRequests: true,
+          emailUpdateRequests: true,
+          deposits: true,
+          payouts: true,
+          frozenAmounts: true,
+          freezeTransactions: true,
+          unfreezeTransactions: true,
+          Swaps: true
+        }
+      });
+      
+      const allUser = result.map(user => ({
+        ...user,
+        telegramUserId: user.telegramUserId.toString(),
+        createdAt: user.createdAt.toISOString(),
+        Transaction: user.Transaction.map(transaction => ({
+          ...transaction,
+          createdAt: transaction.createdAt.toISOString(),
+        })),
+        internalTransferUserOutputs: user.internalTransferUserOutputs.map(output => ({
+          ...output,
+          createdAt: output.createdAt.toISOString(),
+        })),
+        internalTransferUserInputs: user.internalTransferUserInputs.map(output => ({
+          ...output,
+          createdAt: output.createdAt.toISOString(),
+        })),
+        Swaps: user.Swaps.map(swap => ({
+          ...swap,
+          hashId: swap.hashId.toString(),
+          createdAt: swap.createdAt.toISOString(),
+        })),
+      }));
+
+      return {users: allUser};
+    
+    } catch (error) {
+      logger.error(`${this._tagName} failed to get user account: ${error}`);
+      throw error;
+    }
   }
 
   public async getAccountView(userId: number): Promise<AccountView> {
@@ -158,6 +273,127 @@ export class UsersService {
       },
     });
   }
+
+  public async updateUserPermission(userId: number, permission: Permission): Promise<UpdateUserPermissionResult> {
+    try {
+      console.log('permission: ', permission);
+
+      if (!Object.values(Permission).includes(permission)) {
+        return { kind: 'INVALID_PERMISSION' };
+      }
+
+      const findUser =  await this.user.findFirst({
+        where: {
+          id: userId,
+          userRole: 'USER'
+        },
+      });
+
+      if (!findUser) {
+        return { kind: 'USER_NOT_FOUND' };
+      }
+
+      const user = await this.user.update({
+        where: {
+          id: userId,
+          userRole: 'USER'
+        },
+        data: {
+          userPermission: permission
+        }
+      });
+  
+      return { kind: 'OK', user: user };
+    } catch (error) {
+      logger.error(`${this._tagName} failed to update user permission: ${error}`);
+      throw error;
+    } 
+  }
+
+  public async updateAdminPermission(userId: number, permission: Permission): Promise<UpdateAdminPermissionResult> {
+    
+      console.log('permission: ', permission);
+
+      if (!Object.values(Permission).includes(permission)) {
+        return { kind: 'INVALID_PERMISSION' };
+      }
+
+    try {
+      const findAdmin = await this.user.findFirst({
+        where: {
+          id: userId,
+          userRole: 'ADMIN'
+        }
+      });
+
+      if (!findAdmin) {
+        return { kind: 'ADMIN_NOT_FOUND' };
+      }
+
+      const admin = await this.user.update({
+        where: {
+          id: userId,
+          userRole: 'ADMIN'
+        },
+        data: {
+          adminPermission: permission
+        }
+      });
+  
+      return { kind: 'OK', user: admin };
+    } catch (error) {
+      logger.error(`${this._tagName} failed to update user permission: ${error}`);
+      throw error;
+    } 
+  }
+
+  public async addAdmin(userId: number): Promise<AddAdminResult> {
+      const findUser = await this.user.findFirst({
+        where: {
+          id: userId,
+        }
+      });
+
+      if (!findUser) {
+        return { kind: 'USER_NOT_FOUND' };
+      }
+
+      const adminResult = await this.user.update({
+        where: {
+          id: userId,
+        },
+        data: {
+          userRole: Role.ADMIN,
+          adminPermission: Permission.UNBLOCK,
+        }
+      });
+
+      return { kind: 'OK', user: adminResult };
+  }
+
+  public async removeAdmin(userId: number): Promise<RemoveAdminResult> {
+    const findUser = await this.user.findFirst({
+      where: {
+        id: userId,
+      }
+    });
+
+    if (!findUser) {
+      return { kind: 'USER_NOT_FOUND' };
+    }
+
+    const adminResult = await this.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        userRole: Role.USER,
+        adminPermission: Permission.BLOCK,
+      }
+    });
+
+    return { kind: 'OK', user: adminResult };
+}
 
   public async updatePriceCurrency(userId: number, currency: string): Promise<UpdatePriceCurrencyResult> {
     const currencyIndex = priceCurrencies.findIndex(({ id }) => id === currency);

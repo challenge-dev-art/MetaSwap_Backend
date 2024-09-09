@@ -11,10 +11,181 @@ import Container from 'typedi';
 import { UsersService } from '@/services/users.service';
 import { assertNever } from '@/utils/assertNever';
 import { ResponseSuccess } from '@/interfaces/common.interface';
-import { ConfirmEmailUpdateRequestDto, RequestEmailUpdateRequestDto, UpdateAccountCurrencyDto, UpdateAccountEmailDto } from '@/dtos/account.dto';
+import { ConfirmEmailUpdateRequestDto, RequestEmailUpdateRequestDto, UpdateAccountCurrencyDto, UpdateAccountEmailDto, UpdateUserPermissionDto, AddAdminDto } from '@/dtos/account.dto';
 
 export class AccountController {
   public users = Container.get(UsersService);
+
+  public async getUserAccount(req: RequestWithUser, res: Response, next: NextFunction): Promise<void> {
+    const userId = Number(req.query.userId);
+    const accountView = await this.users.getUserAccount(userId);
+    res.json(accountView);
+  }
+
+  public async getAllUser(req: RequestWithUser, res: Response, next: NextFunction): Promise<void> {
+    const allUser = await this.users.getAllUser();
+    res.json(allUser);
+  }
+
+  public async updateUserPermission(req: RequestWithUser, res: Response, next: NextFunction): Promise<void> {
+    if (req.body instanceof UpdateUserPermissionDto === false) {
+      throw new Error('UpdateUserPermissionDto required');
+    }
+
+    const {userId, permission} = req.body;
+    console.log('userId: ', userId);
+    console.log('permission: ', permission);
+    const updateUserPermissionResult = await this.users.updateUserPermission(userId, permission);
+    console.log('updateUserPermissionResult: ', updateUserPermissionResult);
+    switch (updateUserPermissionResult.kind) {
+      case 'OK': {
+        const userResult = {
+          ...updateUserPermissionResult.user,
+          telegramUserId: updateUserPermissionResult.user.telegramUserId.toString(),
+          createdAt: updateUserPermissionResult.user.createdAt.toISOString()
+        }
+        res.json({
+          kind: 'OK',
+          message: 'user permission updated',
+          user: userResult,
+        });
+        break;
+      }
+      case 'USER_NOT_FOUND': {
+        res.status(401).json({
+          kind: updateUserPermissionResult.kind,
+          message: 'user is not found',
+        });
+        break;
+      }
+      case 'INVALID_PERMISSION': {
+        res.status(401).json({
+          kind: updateUserPermissionResult.kind,
+          message: 'invalid permission',
+        });
+        break;
+      }
+      default: {
+        assertNever(updateUserPermissionResult);
+      }
+    }
+  }
+
+  public async updateAdminPermission(req: RequestWithUser, res: Response, next: NextFunction): Promise<void> {
+    if (req.body instanceof UpdateUserPermissionDto === false) {
+      throw new Error('UpdateUserPermissionDto required');
+    }
+
+    const {userId, permission} = req.body;
+    console.log('userId: ', userId);
+    console.log('permission: ', permission);
+    const updateAdminPermissionResult = await this.users.updateAdminPermission(userId, permission);
+    console.log('updateAdminPermissionResult: ', updateAdminPermissionResult);
+    switch (updateAdminPermissionResult.kind) {
+      case 'OK': {
+        const userResult = {
+          ...updateAdminPermissionResult.user,
+          telegramUserId: updateAdminPermissionResult.user.telegramUserId.toString(),
+          createdAt: updateAdminPermissionResult.user.createdAt.toISOString()
+        }
+        res.json({
+          kind: 'OK',
+          message: 'admin permission updated',
+          user: userResult,
+        });
+        break;
+      }
+      case 'ADMIN_NOT_FOUND': {
+        res.status(401).json({
+          kind: "ADMIN_NOT_FOUND",
+          message: 'user is not admin',
+        });
+        break;
+      }
+      case 'INVALID_PERMISSION': {
+        res.status(401).json({
+          kind: updateAdminPermissionResult.kind,
+          message: 'invalid permission',
+        });
+        break;
+      }
+      default: {
+        assertNever(updateAdminPermissionResult);
+      }
+    }
+  }
+
+  public async addAdmin(req: RequestWithUser, res: Response, next: NextFunction): Promise<void> {
+    if (req.body instanceof AddAdminDto === false) {
+      throw new Error('AddAdminDto required');
+    }
+
+    const {userId} = req.body;
+    console.log('userId: ', userId);
+    const addAdminResult = await this.users.addAdmin(userId);
+    console.log('addAdminResult: ', addAdminResult);
+    switch (addAdminResult.kind) {
+      case 'OK': {
+        const adminResult = {
+          ...addAdminResult.user,
+          telegramUserId: addAdminResult.user.telegramUserId.toString(),
+          createdAt: addAdminResult.user.createdAt.toISOString()
+        }
+        res.json({
+          kind: 'OK',
+          message: 'add admin success',
+          user: adminResult,
+        });
+        break;
+      }
+      case 'USER_NOT_FOUND': {
+        res.status(401).json({
+          kind: addAdminResult.kind,
+          message: 'user not found',
+        });
+        break;
+      }
+      default: {
+        assertNever(addAdminResult);
+      }
+    }
+  }
+
+  public async removeAdmin(req: RequestWithUser, res: Response, next: NextFunction): Promise<void> {
+    if (req.body instanceof AddAdminDto === false) {
+      throw new Error('AddAdminDto required');
+    }
+
+    const {userId} = req.body;
+    console.log('userId: ', userId);
+    const removeAdminResult = await this.users.removeAdmin(userId);
+    console.log('removeAdminResult: ', removeAdminResult);
+    switch (removeAdminResult.kind) {
+      case 'OK': {
+        const adminResult = {
+          ...removeAdminResult.user,
+          telegramUserId: removeAdminResult.user.telegramUserId.toString(),
+          createdAt: removeAdminResult.user.createdAt.toISOString()
+        }
+        res.json({
+          kind: 'OK',
+          message: 'remove admin success',
+          user: adminResult,
+        });
+        break;
+      }
+      case 'USER_NOT_FOUND': {
+        res.status(401).json({
+          kind: removeAdminResult.kind,
+          message: 'user not found',
+        });
+        break;
+      }
+      default: {
+        assertNever(removeAdminResult);
+      }
+    }
+  }
 
   public async getUser(req: RequestWithUser, res: Response, next: NextFunction): Promise<void> {
     const accountView = await this.users.getAccountView(req.user.id);

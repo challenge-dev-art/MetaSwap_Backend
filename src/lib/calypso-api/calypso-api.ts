@@ -354,7 +354,7 @@ export class CalypsoApi {
       //   account: '0x1234567890123456789012345678901234567890',
       //   sourceCurrency: 'ETH',
       //   destinationCurrency: 'USDT',
-      //   sourceAmount: 1,
+      //   sourceAmount: 1.4,
       //   destinationAmount: 2400,
       //   state: 'IN_PROGRESS',
       //   createDate: '2023-07-28T13:13:13.000Z'

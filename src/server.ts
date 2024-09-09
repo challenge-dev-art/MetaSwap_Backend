@@ -20,6 +20,10 @@ import { AutoconvertsRoute } from './routes/autoconverts.route';
 import { AutoconvertCurrenciesRoute } from './routes/autoconvert-currencies.route';
 import { OtpRoute } from './routes/otp.route';
 import { VerificationRoute } from './routes/verification.route';
+import { FeedbacksRoute } from './routes/feedbacks.route';
+import { NewsRoute } from './routes/news.route';
+import { DocumentsRoute } from './routes/documents.route';
+import { FeesRoute } from './routes/fees.route';
 import { schedule } from './cron';
 import { logger } from './utils/logger';
 import { SwapsRoute } from './routes/swap.route';
@@ -43,7 +47,11 @@ const app = new App([
   new AutoconvertsRoute(),
   new OtpRoute(),
   new VerificationRoute(),
-  new SwapsRoute()
+  new SwapsRoute(),
+  new FeedbacksRoute(),
+  new NewsRoute(),
+  new DocumentsRoute(),
+  new FeesRoute()
 ]);
 
 app.listen();
