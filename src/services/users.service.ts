@@ -270,6 +270,9 @@ export class UsersService {
         firstName: opts.firstName,
         lastName: opts.lastName ?? '',
         telegramUsername: opts.username,
+        userRole: 'USER',
+        userPermission: 'UNBLOCK',
+        adminPermission: 'UNBLOCK',
       },
     });
   }
