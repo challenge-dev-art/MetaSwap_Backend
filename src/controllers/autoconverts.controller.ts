@@ -1,4 +1,4 @@
-import { CreateAutoconvertRequestDto } from '@/dtos/autoconverts.dto';
+import { CreateAutoconvertRequestDto, ExecuteAutoconvertRequestDto } from '@/dtos/autoconverts.dto';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { CreateAutoconvertErrorResponse } from '@/interfaces/autoconverts.interface';
 import { AutoconvertsService } from '@/services/autoconverts.service';
@@ -14,6 +14,20 @@ export class AutoconvertsController {
     res.json(listing);
   }
 
+  public async executeAutoconvert(req: RequestWithUser, res: Response, next: NextFunction) {
+    const request = req.body;
+    if (request instanceof ExecuteAutoconvertRequestDto === false) {
+      throw new Error('body: ExecuteAutoconvertRequestDto required');
+    }
+    console.log("request: ", request);
+    const result = await this.autoconverts.executeAutoconvert({
+      userId: req.user.id,
+      autoconvertId: request.autoconvertId,
+      amount: request.amount
+    });
+    res.json(result);
+  }
+
   public async createAutoconvert(req: RequestWithUser, res: Response, next: NextFunction) {
     const request = req.body;
     if (request instanceof CreateAutoconvertRequestDto === false) {
@@ -24,6 +38,7 @@ export class AutoconvertsController {
       userId: req.user.id,
       currencyIdFrom: request.currencyIdFrom,
       currencyIdTo: request.currencyIdTo,
+      address: request.address
     });
 
     switch (result.kind) {

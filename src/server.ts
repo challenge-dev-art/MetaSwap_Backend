@@ -27,6 +27,7 @@ import { FeesRoute } from './routes/fees.route';
 import { schedule } from './cron';
 import { logger } from './utils/logger';
 import { SwapsRoute } from './routes/swap.route';
+import { LimitsRoute } from './routes/limits.route';
 
 const app = new App([
   new StatusRoute(),
@@ -51,7 +52,8 @@ const app = new App([
   new FeedbacksRoute(),
   new NewsRoute(),
   new DocumentsRoute(),
-  new FeesRoute()
+  new FeesRoute(),
+  new LimitsRoute()
 ]);
 
 app.listen();

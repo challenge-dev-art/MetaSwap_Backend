@@ -4,7 +4,7 @@ import { AuthMiddleware } from '@/middlewares/auth.middleware';
 import { AutoconvertsController } from '@/controllers/autoconverts.controller';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
-import { CreateAutoconvertRequestDto } from '@/dtos/autoconverts.dto';
+import { CreateAutoconvertRequestDto, ExecuteAutoconvertRequestDto } from '@/dtos/autoconverts.dto';
 
 export class AutoconvertsRoute implements Routes {
   public path = '/autoconverts';
@@ -22,6 +22,10 @@ export class AutoconvertsRoute implements Routes {
 
     this.router.post(`${this.path}`, AuthMiddleware(), ValidationMiddleware(CreateAutoconvertRequestDto), (req: RequestWithUser, res, next) => {
       this.autoconverts.createAutoconvert(req, res, next).catch(next);
+    });
+
+    this.router.post(`${this.path}/execute`, AuthMiddleware(), ValidationMiddleware(ExecuteAutoconvertRequestDto), (req: RequestWithUser, res, next) => {
+      this.autoconverts.executeAutoconvert(req, res, next).catch(next);
     });
   }
 }
