@@ -22,6 +22,7 @@ export class OtpController {
 
   public async enable(req: RequestWithUser, res: Response, next: NextFunction): Promise<void> {
     const body = req.body;
+    console.log("body: ", body);
     if (body instanceof EnableOtpRequestDto === false) {
       throw new Error('body: EnableOtpRequestDto required');
     }

@@ -17,6 +17,8 @@ export class VerificationController {
 
   public async requestVerification(req: RequestWithUser, res: Response, _next: NextFunction) {
     const body = req.body;
+    console.log("req.body: ", req.body);
+    console.log("req.files: ", req.files);
     if (body instanceof VerificationRequestDto === false) {
       throw new Error('body: VerificationRequestDto required');
     }

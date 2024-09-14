@@ -13,7 +13,6 @@ import { AuthOtpRequiredErrorResponse } from '@/interfaces/common.interface';
 const DEV_TG_ID_PREFIX = 'tg:';
 
 const getAuthToken = (req: Request) => {
-  console.log("req: ", req);
   const header = req.header('X-Auth-Token');
   console.log("header: ", header);
   if (header) {
@@ -39,9 +38,9 @@ export const AuthMiddleware = () => {
 
   return [
     async (req: RequestWithUser, res: Response, next: NextFunction) => {
-      //console.log("req: ", req);
-      //const authToken = getAuthToken(req);
-      const authToken = "tg:6407116387";
+
+      const authToken = getAuthToken(req);
+
       if (config.NODE_ENV === 'development' && !!authToken && authToken.startsWith(DEV_TG_ID_PREFIX)) {
         const tgIdRaw = authToken.slice(DEV_TG_ID_PREFIX.length);
         const tgId = parseInt(tgIdRaw, 10);
@@ -51,14 +50,13 @@ export const AuthMiddleware = () => {
         }
         logger.warn(`auth token missing; use dev user ${tgId}`);
         const findUser = await userService.findUserByTgId(tgId);
-        // const findUser = await userService.findUserByTgId(13);
-        //console.log("findUser: ", findUser);
+
         if (findUser === null) {
           next(new HttpException(401, 'user not found'));
           return;
         } else {
           req.user = findUser;
-          console.log("req.user: ", req.user);
+          console.log("user: ", req.user);
           next();
           return;
         }
@@ -72,6 +70,7 @@ export const AuthMiddleware = () => {
       const initData = new URLSearchParams(authToken);
       const initDataValid = validateWebAppData(config.BOT_TOKEN, initData);
       console.log("initDataValid: ", initDataValid);
+      console.log("initData: ", initData);
       if (!initDataValid) {
         next(new HttpException(401, 'wrong authentication token'));
         return;
@@ -85,6 +84,7 @@ export const AuthMiddleware = () => {
       }
 
       const webAppUser = parseWebUser(webAppUserData);
+      console.log("webAppUser: ", webAppUser);
       if (webAppUser === null) {
         logger.error('failed to parse WebAppUser');
         next(new HttpException(500, 'internal server error'));
@@ -108,43 +108,29 @@ export const AuthMiddleware = () => {
       next();
     },
     (req: RequestWithUser, res: Response, next: NextFunction) => {
+      console.log("req: ", req.user);
       if (!req.user.totpSecret) {
         next();
         return;
       }
-
-      // if (!isOtpAuthorized(req)) {
-      //   if (req.method === 'POST' && req.path === '/otp/auth') {
-      //     next();
-      //   } else {
-      //     res.status(401).json({ kind: 'AUTH_OTP_REQUIRED_ERR', message: 'otp auth required' } satisfies AuthOtpRequiredErrorResponse);
-      //   }
-      //   return;
-      // }
+      console.log("isOtpAuthorized: ", isOtpAuthorized(req));
+      if (!isOtpAuthorized(req)) {
+        if (req.method === 'POST' && req.path === '/otp/auth') {
+          next();
+        } else {
+          res.status(401).json({ kind: 'AUTH_OTP_REQUIRED_ERR', message: 'otp auth required' } satisfies AuthOtpRequiredErrorResponse);
+        }
+        return;
+      }
 
       next();
     },
   ];
-  // return [
-  //   async (req: RequestWithUser, res: Response, next: NextFunction) => {
-  //       const findUser = await userService.findUserByTgId(13);
-  //       if (findUser === null) {
-  //         next(new HttpException(401, 'user not found'));
-  //         return;
-  //       } else {
-  //         req.user = findUser;
-  //         next();
-  //         return;
-  //       }
-  //   },
-  //   (req: RequestWithUser, res: Response, next: NextFunction) => {
-  //     next();
-  //   },
-  // ];
 };
 
 function isOtpAuthorized(req: RequestWithUser) {
   const authToken = getOtpAuthToken(req);
+  console.log("authToken: ", authToken);
   if (!authToken) {
     return false;
   }
@@ -152,6 +138,7 @@ function isOtpAuthorized(req: RequestWithUser) {
   let payload: DataStoredInToken;
   try {
     payload = verify(authToken, config.SECRET_KEY) as DataStoredInToken;
+    console.log("payload: ", payload);
   } catch (_error) {
     return false;
   }

@@ -243,6 +243,15 @@ model Payout {
   finalized      Boolean            @default(false)
 }
 
+model Limit {
+  id             Int          @id @default(autoincrement())
+  checkVerification VerifyType
+  limitType      LimitType
+  amount         Float
+  currencyId     CurrencyType
+  createdAt  DateTime @default(now())
+}
+
 model CalypsoPayoutUpdate {
   id         Int      @id @default(autoincrement())
   type       String
@@ -356,5 +365,16 @@ enum FeeType {
   RECEIVE
   SEND
   EXCHANGE
+}
+
+enum VerifyType {
+  VERIFIED
+  UNVERIFIED
+}
+
+enum LimitType {
+  TRANSFER_MONTH
+  SWAP_MONTH
+  AUTOCONVERT_MONTH
 }
 

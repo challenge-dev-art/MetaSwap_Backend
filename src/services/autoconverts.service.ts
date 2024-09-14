@@ -1,7 +1,7 @@
 import { config } from '@/config';
 import { autoconvertCurrencies } from '@/config/autoconvert-currencies';
 import { currencies } from '@/config/currencies';
-import { AutoconvertListing as AutoconvertListingView, Autoconvert as AutoconvertView } from '@/interfaces/autoconverts.interface';
+import { AutoconvertListing as AutoconvertListingView, Autoconvert as AutoconvertView, AutoconvertExecute as AutoconvertList } from '@/interfaces/autoconverts.interface';
 import { prisma } from '@/prisma-client';
 import { Service } from 'typedi';
 
@@ -9,6 +9,13 @@ export interface CreateAutoconvertOpts {
   userId: number;
   currencyIdFrom: string;
   currencyIdTo: string;
+  address: string;
+}
+
+export interface ExecuteAutoconvertOpts {
+  userId: number;
+  autoconvertId: number;
+  amount: number;
 }
 
 export type CreateAutoconvertResult =
@@ -20,12 +27,23 @@ export type CreateAutoconvertResult =
       kind: 'UNSUPPORTED_CURRENCY_ERR';
     };
 
+export type ExecuteAutoconvertResult =
+  | {
+    kind: 'OK';
+    autoconvert: AutoconvertList;
+    }
+  | {
+      kind: 'UNSUPPORTED_CURRENCY_ERR';
+    };
+
 @Service()
 export class AutoconvertsService {
   private _idToCurrency = new Map(currencies.map(currency => [currency.id, currency]));
   private _idToAutoconvertCurrency = new Map(autoconvertCurrencies.map(currency => [currency.id as string, currency]));
 
   public async getAutoconverts(userId: number): Promise<AutoconvertListingView> {
+    console.log("_idToCurrency: ", this._idToCurrency);
+    console.log("_idToAutoconvertCurrency: ", this._idToAutoconvertCurrency);
     const autoconverts = await prisma.autoconvert.findMany({
       where: {
         userId,
@@ -73,12 +91,13 @@ export class AutoconvertsService {
     const autoconvert = await prisma.autoconvert.create({
       data: {
         userId: opts.userId,
-        address: '0xbC430A61EbBA28F1d0b427dE204503280671c9C8',
+        address: opts.address,
         currencyIdFrom: currencyFrom.id,
-        currencyIdTo: currencyFrom.id,
+        currencyIdTo: currencyTo.id,
       },
       select: {
         id: true,
+        address: true
       },
     });
 
@@ -86,11 +105,39 @@ export class AutoconvertsService {
       kind: 'OK',
       autoconvert: {
         id: autoconvert.id.toString(),
-        address: '0xbC430A61EbBA28F1d0b427dE204503280671c9C8',
-        addressQrUrl: createQrUrl('0xbC430A61EbBA28F1d0b427dE204503280671c9C8'),
+        address: autoconvert.address,
+        addressQrUrl: createQrUrl(autoconvert.address),
         currencyFrom,
         currencyTo,
       },
+    };
+  }
+
+  public async executeAutoconvert(opts: ExecuteAutoconvertOpts): Promise<ExecuteAutoconvertResult> {
+    const autoconvert = await prisma.autoconvert.findUnique({
+      where: {
+        id: opts.autoconvertId,
+      },
+      select: {
+        id: true,
+        address: true,
+        currencyIdFrom: true,
+        currencyIdTo: true,
+      },
+    });
+    if (!autoconvert) {
+      return { kind: 'UNSUPPORTED_CURRENCY_ERR' };
+    }
+    return {
+      kind: 'OK',
+      autoconvert: {
+        id: autoconvert.id.toString(),
+        address: autoconvert.address,
+        addressQrUrl: createQrUrl(autoconvert.address),
+        currencyFrom: autoconvert.currencyIdFrom,
+        currencyTo: autoconvert.currencyIdTo,
+        amount: opts.amount
+      }
     };
   }
 

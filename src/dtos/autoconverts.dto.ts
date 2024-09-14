@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber } from 'class-validator';
 
 export class CreateAutoconvertRequestDto {
   @IsString()
@@ -8,4 +8,18 @@ export class CreateAutoconvertRequestDto {
   @IsString()
   @IsNotEmpty()
   public currencyIdTo: string;
+
+  @IsString()
+  @IsNotEmpty()
+  public address: string;
+}
+
+export class ExecuteAutoconvertRequestDto {
+  @IsNumber()
+  @IsNotEmpty()
+  public autoconvertId: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  public amount: number;
 }

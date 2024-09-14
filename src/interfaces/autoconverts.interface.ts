@@ -8,6 +8,15 @@ export interface Autoconvert {
   currencyTo: CryptoCurrency; // см. /autoconvert-currencies/
 }
 
+export interface AutoconvertExecute {
+  id: string;
+  address: string;
+  addressQrUrl: string;
+  currencyFrom: string; // см. /autoconvert-currencies/
+  currencyTo: string; // см. /autoconvert-currencies/
+  amount: number;
+}
+
 export interface AutoconvertListing {
   items: Autoconvert[];
 }
@@ -15,4 +24,8 @@ export interface AutoconvertListing {
 export interface CreateAutoconvertErrorResponse {
   kind: 'UNSUPPORTED_CURRENCY_ERR';
   message: string;
+}
+
+export interface AutoconvertList {
+  item: AutoconvertExecute;
 }
